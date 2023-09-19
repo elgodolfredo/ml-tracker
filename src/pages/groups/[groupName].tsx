@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/router';
 import { Group, Product } from '@/utils/interfaces';
 import Link from 'next/link';
 import { formatCurrency } from '@/utils';
+import { AuthContext } from '@/contexts/AuthContext';
 
 function GroupDetails() {
   const router = useRouter();
@@ -12,11 +13,13 @@ function GroupDetails() {
   const [basePrice, setBasePrice] = useState('');
   const [total, setTotal] = useState(0);
   const [lastPrice, setLastPrice] = useState(0);
+  const  {fetchWithAuth } = useContext(AuthContext);
+
   useEffect(() => {
     // Fetch the group data and products based on groupName
     if (groupName) {
       // Make an API request to retrieve the group details
-      fetch(`/api/groups/${groupName}`)
+      fetchWithAuth(`/api/groups/${groupName}`)
         .then((response) => response.json())
         .then((data: Group) => {
           setGroup(data);
@@ -50,7 +53,7 @@ function GroupDetails() {
     };
 
     // Make an API request to add the product to the group
-    const response = await fetch(`/api/groups/${groupName}/new`, {
+    const response = await fetchWithAuth(`/api/groups/${groupName}/new`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -63,7 +66,7 @@ function GroupDetails() {
         setBasePrice('');
         
         // Refresh the group data to reflect the new product
-        const updatedGroupResponse = await fetch(`/api/groups/${groupName}`);
+        const updatedGroupResponse = await fetchWithAuth(`/api/groups/${groupName}`);
         const updatedGroupData = await updatedGroupResponse.json();
         setGroup(updatedGroupData);
         calculateNewTotals(updatedGroupData);

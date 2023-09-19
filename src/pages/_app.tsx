@@ -1,3 +1,4 @@
+import { FirebaseProvider } from '@/contexts/AuthContext'
 import './globals.css'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
@@ -15,16 +16,18 @@ function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className={inter.className}>
-      <nav className="header">
-        <Link className="header-logo" href="/">Product Tracker</Link>
-      </nav>
-      <div>
-        <main>
-            {children}
-        </main>
+    <FirebaseProvider>
+      <div className={inter.className}>
+        <nav className="header">
+          <Link className="header-logo" href="/">Product Tracker</Link>
+        </nav>
+        <div>
+          <main>
+              {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </FirebaseProvider>
   )
 }
 

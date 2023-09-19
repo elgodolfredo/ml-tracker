@@ -1,19 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/router';
 import { Product } from '@/utils/interfaces';
 import { formatCurrency } from '@/utils';
+import { AuthContext } from '@/contexts/AuthContext';
 
 function ProductDetails() {
   const router = useRouter();
   const { productName } = router.query;
   const [href, setHref] = useState('');
   const [product, setProduct] = useState<Product|null>(null);
+  const { fetchWithAuth } = useContext(AuthContext);
 
   useEffect(() => {
     // Fetch the product data based on productName
     if (productName) {
       // Make an API request to retrieve the product details
-      fetch(`/api/products/${productName}`)
+      fetchWithAuth(`/api/products/${productName}`)
         .then((response) => response.json())
         .then((data) => {
           setProduct(data);
@@ -33,7 +35,7 @@ function ProductDetails() {
     };
 
     // Make an API request to add the link to the product
-    const response = await fetch(`/api/products/${productName}`, {
+    const response = await fetchWithAuth(`/api/products/${productName}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -45,7 +47,7 @@ function ProductDetails() {
       // Clear the form fields after successfully adding the link
       setHref('');
       // Refresh the product data to reflect the new link
-      const updatedProductResponse = await fetch(`/api/products/${productName}`);
+      const updatedProductResponse = await fetchWithAuth(`/api/products/${productName}`);
       const updatedProductData = await updatedProductResponse.json();
       setProduct(updatedProductData);
     } else {

@@ -1,42 +1,43 @@
 import { useEffect, useState } from 'react';
-import styles from './page.module.css'
-import { useRouter } from 'next/router'
-import { Group } from '@/utils/interfaces';
-import Link from 'next/link';
+import { auth } from '@/utils/firebase';
+import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from 'firebase/auth';
+import { useRouter } from 'next/router';
 
-export default function Home() {
+export default function Index () {
+  const [error, setError] = useState(null);
   const router = useRouter();
 
-  const [groups, setGroups] = useState<Group[]>([]);
   useEffect(() => {
-    // Make a GET request to the get-groups API route
-    fetch('/api/groups')
-      .then((response) => response.json())
-      .then((data: Group[]) => {
-        setGroups(data);
-      })
-      .catch((error) => {
-        console.error('Error fetching groups:', error);
-      });
+    // If the user is already signed in, redirect to home page
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        router.push('/home');
+      }
+    });
+    return () => {
+      unsub();
+    };
   }, []);
+  const handleSignInWithGoogle = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+
+      // Sign in with Google using Firebase Auth
+      const result = await signInWithPopup(auth, provider);
+
+      // The user is signed in with Google
+      console.log('Successfully signed in with Google', result.user);
+      router.push('/home');
+    } catch (error: any) {
+      console.error('Error signing in with Google:', error);
+      setError(error.message);
+    }
+  };
 
   return (
-    <>
-      <div className={styles.description}>
-        <h1>Welcome!</h1>
-      </div>
-
-      <div>
-        <div>
-          {groups.map((group, index) => (
-            <div>
-              <Link href={`/groups/${group.name}`} key={index}>{group.name}</Link>
-            </div>
-          ))}
-        </div>
-        <p>Create a new group to add products to it.</p>
-        <button onClick={() => {router.push('/groups/new')}}>Create Group</button>
-      </div>
-    </>
-  )
-}
+    <div>
+      <button onClick={handleSignInWithGoogle}>Sign in with Google</button>
+      {error && <p>{error}</p>}
+    </div>
+  );
+};

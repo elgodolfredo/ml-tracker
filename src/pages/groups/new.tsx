@@ -1,17 +1,18 @@
+import { AuthContext } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useContext, useState } from "react";
 
 
 function CreateGroup() {
   const router = useRouter();
   const [groupName, setGroupName] = useState('');
-
+  const { fetchWithAuth } = useContext(AuthContext);
   const handleSubmit = async (e: any) => {
     e.preventDefault();
 
     try {
       // Send a POST request to the create-group API route
-      const response = await fetch('/api/groups/new', {
+      const response = await fetchWithAuth('/api/groups/new', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
