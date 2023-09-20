@@ -1,10 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import admin from '@/utils/firebaseAdmin';
-import { Group } from '@/utils/interfaces';
+import admin from '@/utils/firebaseAdmin'; // Import the firebase-admin module you created
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
-  if (req.method === 'POST') {
+  if (req.method === 'GET') {
     try {
+      const { groupKey } = req.query;
+
       // Verify the Firebase Authentication token from the "Authorization" header
       const token = req.headers.authorization?.split(' ')[1]; // Extract the token part
       const decodedToken = await admin.auth().verifyIdToken(token!);
@@ -20,25 +21,26 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       const db = admin.database();
 
       // Reference to the user's "groups" in the Realtime Database
-      const userGroupsRef = db.ref(`/user_groups/${uid}/groups`);
+      const userGroupsRef = db.ref(`/user_groups/${uid}/groups/${groupKey}`);
 
-      // Parse the incoming JSON data
-      const { name } = req.body;
+      // Fetch data from the reference using an await approach
+      const snapshot = await userGroupsRef.once('value');
 
-      // Create a new group object
-      const newGroup: Group = { 
-        key: '',
-        name, 
-        products: [] 
-      };
+      if (snapshot.exists()) {
+        const group = snapshot.val();
 
-      // Push the new group to the user's "groups" in the Realtime Database
-      const groupRef = userGroupsRef.push();
-      newGroup.key = groupRef.key!;
-      await groupRef.set(newGroup);
-
-      // Respond with a success message
-      res.status(200).json({ message: 'Group created successfully.' });
+        if (group) {
+          // Respond with the group details
+          group.products = Object.values(group.products || []);
+          res.status(200).json(group);
+        } else {
+          // Group not found
+          res.status(404).json({ error: 'Group not found' });
+        }
+      } else {
+        // User has no groups
+        res.status(404).json({ error: 'User has no groups' });
+      }
     } catch (error) {
       console.error('Firebase error:', error);
       res.status(500).json({ error: 'Internal server error' });

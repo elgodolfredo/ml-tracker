@@ -1,16 +1,41 @@
-import fs from 'fs';
-import path from 'path';
+import { NextApiRequest, NextApiResponse } from 'next';
+import admin from '@/utils/firebaseAdmin';
 
-const groupsFilePath = path.join(process.cwd(), 'groups.json');
-
-export default (req:any, res:any) => {
+export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === 'GET') {
-    // Read existing groups from the JSON file
-    const groupsData = fs.readFileSync(groupsFilePath, 'utf-8');
-    const groups = JSON.parse(groupsData);
+    const db = admin.database();
 
-    // Respond with the list of groups
-    res.status(200).json(groups);
+    try {
+      // Verify and decode the JWT token from the "Authorization" header
+      const token = req.headers.authorization?.split(' ')[1]; // Extract the token part
+      const decodedToken = await admin.auth().verifyIdToken(token!);
+
+      if (!decodedToken || !decodedToken.uid) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const uid = decodedToken.uid;
+
+      // Reference to the user's "groups" in the Realtime Database
+      const userGroupsRef = db.ref(`/user_groups/${uid}/groups`);
+
+      // Get data from the specified reference
+      const snapshot = await userGroupsRef.get();
+
+      if (snapshot.exists()) {
+        // Extract the data from the snapshot
+        const userGroups = snapshot.val();
+
+        // Respond with the user's groups
+        res.status(200).json(Object.values(userGroups));
+      } else {
+        res.status(200).json([]);
+      }
+    } catch (error) {
+      console.error('Firebase error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   } else {
     // Handle other HTTP methods if needed
     res.status(405).end(); // Method Not Allowed

@@ -32,7 +32,7 @@ export default function Home() {
         <div>
           {groups.map((group, index) => (
             <div key={group.name}>
-              <Link href={`/groups/${group.name}`} key={index}>{group.name}</Link>
+              <Link href={`/groups/${group.key}`} key={index}>{group.name}</Link>
             </div>
           ))}
         </div>

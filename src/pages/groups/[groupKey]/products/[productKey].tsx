@@ -6,16 +6,16 @@ import { AuthContext } from '@/contexts/AuthContext';
 
 function ProductDetails() {
   const router = useRouter();
-  const { productName } = router.query;
+  const { groupKey, productKey } = router.query;
   const [href, setHref] = useState('');
   const [product, setProduct] = useState<Product|null>(null);
   const { fetchWithAuth } = useContext(AuthContext);
 
   useEffect(() => {
     // Fetch the product data based on productName
-    if (productName) {
+    if (productKey) {
       // Make an API request to retrieve the product details
-      fetchWithAuth(`/api/products/${productName}`)
+      fetchWithAuth(`/api/groups/${groupKey}/products/${productKey}`)
         .then((response) => response.json())
         .then((data) => {
           setProduct(data);
@@ -24,7 +24,7 @@ function ProductDetails() {
           console.error('Error fetching product details:', error);
         });
     }
-  }, [productName]);
+  }, [productKey]);
 
   const handleAddLink = async (e: any) => {
     e.preventDefault();
@@ -35,7 +35,7 @@ function ProductDetails() {
     };
 
     // Make an API request to add the link to the product
-    const response = await fetchWithAuth(`/api/products/${productName}`, {
+    const response = await fetchWithAuth(`/api/groups/${groupKey}/products/${productKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -47,7 +47,7 @@ function ProductDetails() {
       // Clear the form fields after successfully adding the link
       setHref('');
       // Refresh the product data to reflect the new link
-      const updatedProductResponse = await fetchWithAuth(`/api/products/${productName}`);
+      const updatedProductResponse = await fetchWithAuth(`/api/groups/${groupKey}/products/${productKey}`);
       const updatedProductData = await updatedProductResponse.json();
       setProduct(updatedProductData);
     } else {
@@ -63,7 +63,7 @@ function ProductDetails() {
           <p>Base Price: {formatCurrency(product.basePrice)}</p>
           <h2>Links:</h2>
           <ul>
-            {product.links.map((link, index) => (
+            {product.links && product.links.map((link, index) => (
               <li key={index}>
                 Last Price: {formatCurrency(link.lastPrice)}
               </li>

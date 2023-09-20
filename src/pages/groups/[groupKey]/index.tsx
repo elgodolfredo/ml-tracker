@@ -7,7 +7,7 @@ import { AuthContext } from '@/contexts/AuthContext';
 
 function GroupDetails() {
   const router = useRouter();
-  const { groupName } = router.query;
+  const { groupKey } = router.query;
   const [group, setGroup] = useState<Group|null>(null);
   const [productName, setProductName] = useState('');
   const [basePrice, setBasePrice] = useState('');
@@ -16,10 +16,10 @@ function GroupDetails() {
   const  {fetchWithAuth } = useContext(AuthContext);
 
   useEffect(() => {
-    // Fetch the group data and products based on groupName
-    if (groupName) {
+    // Fetch the group data and products based on groupKey
+    if (groupKey) {
       // Make an API request to retrieve the group details
-      fetchWithAuth(`/api/groups/${groupName}`)
+      fetchWithAuth(`/api/groups/${groupKey}`)
         .then((response) => response.json())
         .then((data: Group) => {
           setGroup(data);
@@ -30,9 +30,10 @@ function GroupDetails() {
           console.error('Error fetching group details:', error);
         });
     }
-  }, [groupName]);
+  }, [groupKey]);
 
   const calculateNewTotals = (group: Group) => {
+    if (!group.products) return;
     const newTotal = group?.products.reduce((total: number, product: Product) => {
       return total + product.basePrice;
     }, 0);
@@ -53,7 +54,7 @@ function GroupDetails() {
     };
 
     // Make an API request to add the product to the group
-    const response = await fetchWithAuth(`/api/groups/${groupName}/new`, {
+    const response = await fetchWithAuth(`/api/groups/${groupKey}/new`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -66,7 +67,7 @@ function GroupDetails() {
         setBasePrice('');
         
         // Refresh the group data to reflect the new product
-        const updatedGroupResponse = await fetchWithAuth(`/api/groups/${groupName}`);
+        const updatedGroupResponse = await fetchWithAuth(`/api/groups/${groupKey}`);
         const updatedGroupData = await updatedGroupResponse.json();
         setGroup(updatedGroupData);
         calculateNewTotals(updatedGroupData);
@@ -85,9 +86,9 @@ function GroupDetails() {
           <p>Difference: {lastPrice > total && ('+')} {formatCurrency(lastPrice - total)}</p>
           <h2>Products:</h2>
           <ul>
-            {group.products.map((product, index) => (
+            {group.products && group.products.map((product, index) => (
               <li key={index}>
-                <Link href={`/products/${product.name}`}>
+                <Link href={`/groups/${groupKey}/products/${product.key}`}>
                   {product.name} - Base Price: {formatCurrency(product.basePrice)}
                 </Link>
               </li>
