@@ -3,12 +3,23 @@ import { useRouter } from 'next/router';
 import { Product } from '@/utils/interfaces';
 import { formatCurrency } from '@/utils';
 import { AuthContext } from '@/contexts/AuthContext';
+import {
+  Box,
+  Heading,
+  Text,
+  UnorderedList,
+  ListItem,
+  FormControl,
+  Input,
+  Button,
+} from '@chakra-ui/react';
 
 function ProductDetails() {
   const router = useRouter();
   const { groupKey, productKey } = router.query;
   const [href, setHref] = useState('');
-  const [product, setProduct] = useState<Product|null>(null);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
   const { fetchWithAuth } = useContext(AuthContext);
 
   useEffect(() => {
@@ -19,9 +30,11 @@ function ProductDetails() {
         .then((response) => response.json())
         .then((data) => {
           setProduct(data);
+          setLoading(false); // Mark loading as complete
         })
         .catch((error) => {
           console.error('Error fetching product details:', error);
+          setLoading(false); // Mark loading as complete with an error
         });
     }
   }, [productKey]);
@@ -56,37 +69,45 @@ function ProductDetails() {
   };
 
   return (
-    <div>
-      {product ? (
+    <Box p={4}>
+      {loading ? (
+        <Heading>Loading product details...</Heading>
+      ) : product ? (
         <>
-          <h1>{product.name} Details</h1>
-          <p>Base Price: {formatCurrency(product.basePrice)}</p>
-          <h2>Links:</h2>
-          <ul>
-            {product.links && product.links.map((link, index) => (
-              <li key={index}>
-                Last Price: {formatCurrency(link.lastPrice)}
-              </li>
+          <Heading size="lg">{product.name}</Heading>
+          <Text>Base Price: {formatCurrency(product.basePrice)}</Text>
+          <Heading size="md" mt={4}>
+            Links:
+          </Heading>
+          <UnorderedList styleType="none">
+          {product.links && product.links.map((link, index) => (
+              <ListItem key={index}>
+                <Text><a href={link.href} target="_blank" rel="noopener noreferrer" style={{ color: "blue", textDecoration: "underline" }}>{formatCurrency(link.lastPrice)}</a></Text>
+              </ListItem>
             ))}
-          </ul>
-          <h2>Add a New Link:</h2>
+          </UnorderedList>
+          <Heading size="md" mt={4}>
+            Add a New Link:
+          </Heading>
           <form onSubmit={handleAddLink}>
-            <label>
-              Link:
-              <input
+            <FormControl mt={2}>
+              <Input
                 type="text"
                 value={href}
                 onChange={(e) => setHref(e.target.value)}
                 required
+                placeholder="Enter link"
               />
-            </label>
-            <button type="submit">Add Link</button>
+            </FormControl>
+            <Button mt={2} colorScheme="teal" type="submit">
+              Add Link
+            </Button>
           </form>
         </>
       ) : (
-        <p>Loading product details...</p>
+        <Heading>Error loading product details</Heading>
       )}
-    </div>
+    </Box>
   );
 }
 

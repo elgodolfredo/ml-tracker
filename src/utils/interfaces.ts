@@ -13,7 +13,7 @@ export type Product = {
 };
 
 export type Link = {
-    link: string;
+    href: string | undefined;
     lastPrice: number;
 }
 

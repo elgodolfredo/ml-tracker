@@ -1,19 +1,37 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useRouter } from 'next/router';
 import { Group, Product } from '@/utils/interfaces';
-import Link from 'next/link';
 import { formatCurrency } from '@/utils';
 import { AuthContext } from '@/contexts/AuthContext';
+import {
+  Box,
+  Heading,
+  List,
+  ListItem,
+  FormControl,
+  Link as ChakraLink,
+  Input,
+  Button,
+  Spinner,
+  Alert,
+  AlertIcon,
+  Badge,
+  Flex,
+  Text,
+  Spacer,
+} from '@chakra-ui/react';
 
 function GroupDetails() {
   const router = useRouter();
   const { groupKey } = router.query;
-  const [group, setGroup] = useState<Group|null>(null);
+  const [group, setGroup] = useState<Group | null>(null);
   const [productName, setProductName] = useState('');
   const [basePrice, setBasePrice] = useState('');
   const [total, setTotal] = useState(0);
   const [lastPrice, setLastPrice] = useState(0);
-  const  {fetchWithAuth } = useContext(AuthContext);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { fetchWithAuth } = useContext(AuthContext);
 
   useEffect(() => {
     // Fetch the group data and products based on groupKey
@@ -25,9 +43,12 @@ function GroupDetails() {
           setGroup(data);
           // Calculate the total
           calculateNewTotals(data);
+          setLoading(false);
         })
         .catch((error) => {
           console.error('Error fetching group details:', error);
+          setError('Error fetching group details');
+          setLoading(false);
         });
     }
   }, [groupKey]);
@@ -53,74 +74,114 @@ function GroupDetails() {
       basePrice: parseFloat(basePrice),
     };
 
-    // Make an API request to add the product to the group
-    const response = await fetchWithAuth(`/api/groups/${groupKey}/new`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(newProduct),
-    });
-    if (response.ok) {
+    try {
+      // Make an API request to add the product to the group
+      const response = await fetchWithAuth(`/api/groups/${groupKey}/new`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newProduct),
+      });
+
+      if (response.ok) {
         // Clear the form fields after successfully adding the product
         setProductName('');
         setBasePrice('');
-        
+
         // Refresh the group data to reflect the new product
         const updatedGroupResponse = await fetchWithAuth(`/api/groups/${groupKey}`);
         const updatedGroupData = await updatedGroupResponse.json();
         setGroup(updatedGroupData);
         calculateNewTotals(updatedGroupData);
-    } else {
-    console.error('Product creation failed.');
+      } else {
+        setError('Product creation failed.');
+        console.error('Product creation failed.');
+      }
+    } catch (error) {
+      setError('An error occurred.');
+      console.error('An error occurred:', error);
     }
   }
 
   return (
-    <div>
-      {group ? (
-        <>
-          <h1>{group.name} Details</h1>
-          <p>Total: {formatCurrency(total)}</p>
-          <p>Last Price: {formatCurrency(lastPrice)}</p>
-          <p>Difference: {lastPrice > total && ('+')} {formatCurrency(lastPrice - total)}</p>
-          <h2>Products:</h2>
-          <ul>
-            {group.products && group.products.map((product, index) => (
-              <li key={index}>
-                <Link href={`/groups/${groupKey}/products/${product.key}`}>
-                  {product.name} - Base Price: {formatCurrency(product.basePrice)}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <h2>Add a New Product:</h2>
-          <form onSubmit={handleAddProduct}>
-            <label>
-              Product Name:
-              <input
-                type="text"
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
-                required
-              />
-            </label>
-            <label>
-              Base Price:
-              <input
-                type="number"
-                value={basePrice}
-                onChange={(e) => setBasePrice(e.target.value)}
-                required
-              />
-            </label>
-            <button type="submit">Add Product</button>
-          </form>
-        </>
+    <Box p={4}>
+      {loading ? (
+        <Spinner />
       ) : (
-        <p>Loading group details...</p>
+        <>
+          {error ? (
+            <Alert status="error">
+              <AlertIcon />
+              {error}
+            </Alert>
+          ) : (
+            <>
+              <Heading size="lg">{group?.name}</Heading>
+              <Box mb={4}>
+                <Text>
+                  <span>Total: {formatCurrency(total)}</span>
+                </Text>
+                <Text>
+                  <span>Last Price: {formatCurrency(lastPrice)}</span>
+                </Text>
+                <Text>
+                  <span>
+                    Difference: 
+                    <Badge 
+                      colorScheme={lastPrice >= total ? 'green' : 'red'} 
+                      ml={2}
+                    >
+                      {lastPrice >= total ? '+' : '-'} {formatCurrency(Math.abs(lastPrice - total))}
+                    </Badge>
+                  </span>
+                </Text>
+              </Box>
+              <Heading size="md">Products:</Heading>
+              <List mb={3}>
+                {group?.products && group?.products.map((product, index) => (
+                  <ListItem key={index}>
+                    <ChakraLink href={`/groups/${groupKey}/products/${product.key}`} textDecoration="none">
+                    <Flex justifyContent="space-between" alignItems="center" maxW="400px"> {/* Adjust max width as needed */}
+                      <Text fontSize="md">{product.name}</Text>
+                      <Spacer />
+                      <Text fontSize="md" textAlign="right">
+                        Base Price: {formatCurrency(product.basePrice)}
+                      </Text>
+                    </Flex>
+                    </ChakraLink>
+                  </ListItem>
+                ))}
+              </List>
+              <Heading size="md">Add a New Product:</Heading>
+              <form onSubmit={handleAddProduct}>
+                <FormControl mt={4}>
+                  <Input
+                    type="text"
+                    value={productName}
+                    onChange={(e) => setProductName(e.target.value)}
+                    placeholder="Enter product name"
+                    required
+                  />
+                </FormControl>
+                <FormControl mt={4}>
+                  <Input
+                    type="number"
+                    value={basePrice}
+                    onChange={(e) => setBasePrice(e.target.value)}
+                    placeholder="Enter base price"
+                    required
+                  />
+                </FormControl>
+                <Button mt={4} colorScheme="teal" type="submit">
+                  Add Product
+                </Button>
+              </form>
+            </>
+          )}
+        </>
       )}
-    </div>
+    </Box>
   );
 }
 

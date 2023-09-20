@@ -1,9 +1,8 @@
 import { useContext, useEffect, useState } from 'react';
-import styles from './page.module.css'
 import { useRouter } from 'next/router'
 import { Group } from '@/utils/interfaces';
-import Link from 'next/link';
 import { AuthContext } from '@/contexts/AuthContext';
+import { Box, Heading, Text, Button, Link as ChakraLink, Flex } from '@chakra-ui/react';
 
 export default function Home() {
   const router = useRouter();
@@ -23,22 +22,23 @@ export default function Home() {
   }, []);
 
   return (
-    <>
-      <div className={styles.description}>
-        <h1>Welcome!</h1>
-      </div>
+    <Box p={4}>
+    <Heading>Welcome!</Heading>
 
-      <div>
-        <div>
-          {groups.map((group, index) => (
-            <div key={group.name}>
-              <Link href={`/groups/${group.key}`} key={index}>{group.name}</Link>
-            </div>
-          ))}
-        </div>
-        <p>Create a new group to add products to it.</p>
-        <button onClick={() => {router.push('/groups/new')}}>Create Group</button>
-      </div>
-    </>
+    <Box mt={4}>
+      <Text>Create a new group to add products to it.</Text>
+      <Button onClick={() => router.push('/groups/new')}>Create Group</Button>
+    </Box>
+
+    <Flex mt={4} flexWrap="wrap">
+      {groups.map((group, index) => (
+        <Box key={group.name} p={4}>
+          <ChakraLink href={`/groups/${group.key}`} key={index}>
+            {group.name}
+          </ChakraLink>
+        </Box>
+      ))}
+    </Flex>
+  </Box>
   )
 }

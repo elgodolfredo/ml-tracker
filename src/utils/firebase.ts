@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import "firebase/auth";
 import "firebase/database";
-import { getAuth } from "firebase/auth";
+import { GoogleAuthProvider, getAuth } from "firebase/auth";
 const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
 const databaseURL = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL;
@@ -22,3 +22,4 @@ const firebaseConfig = {
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+export const provider = new GoogleAuthProvider();
