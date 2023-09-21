@@ -12,6 +12,7 @@ import {
   FormControl,
   Input,
   Button,
+  Spinner,
 } from '@chakra-ui/react';
 
 function ProductDetails() {
@@ -71,7 +72,7 @@ function ProductDetails() {
   return (
     <Box p={4}>
       {loading ? (
-        <Heading>Loading product details...</Heading>
+        <Spinner />
       ) : product ? (
         <>
           <Heading size="lg">{product.name}</Heading>

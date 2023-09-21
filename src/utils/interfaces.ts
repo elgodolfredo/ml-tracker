@@ -2,6 +2,8 @@ export type Group = {
     key: string;
     name: string;
     products?: Product[];
+    totalLastPrice?: number;
+    numProducts?: number;
 };
 
 export type Product = {

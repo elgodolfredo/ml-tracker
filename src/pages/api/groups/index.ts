@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import admin from '@/utils/firebaseAdmin';
+import { Group, Product } from '@/utils/interfaces';
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === 'GET') {
@@ -28,7 +29,17 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         const userGroups = snapshot.val();
 
         // Respond with the user's groups
-        res.status(200).json(Object.values(userGroups));
+        // res.status(200).json(Object.values(userGroups));
+        const simplifiedGroups = Object.entries(userGroups).map(([key, group]: [string, any]) => ({
+          key: key, // Include the key property
+          name: group.name,
+          totalLastPrice: calculateTotalLastPrice(group.products),
+          numProducts: group.products ? Object.keys(group.products || {}).length : 0,
+        }));
+
+        // Respond with the simplified user's groups
+        res.status(200).json(simplifiedGroups);
+
       } else {
         res.status(200).json([]);
       }
@@ -41,3 +52,13 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     res.status(405).end(); // Method Not Allowed
   }
 };
+
+function calculateTotalLastPrice(products: {[key: string]: Product}) {
+  if (!products) return 0;
+
+  let totalLastPrice = 0;
+  for (const productKey in products) {
+    totalLastPrice += products[productKey].avgLastPrice;
+  }
+  return totalLastPrice;
+}
