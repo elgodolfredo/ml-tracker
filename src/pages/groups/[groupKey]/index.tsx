@@ -20,6 +20,7 @@ import {
   Text,
   Spacer,
 } from '@chakra-ui/react';
+import NextLink from 'next/link';
 
 function GroupDetails() {
   const router = useRouter();
@@ -141,7 +142,7 @@ function GroupDetails() {
               <List mb={3}>
                 {group?.products && group?.products.map((product, index) => (
                   <ListItem key={index}>
-                    <ChakraLink href={`/groups/${groupKey}/products/${product.key}`} textDecoration="none">
+                    <ChakraLink as={NextLink} href={`/groups/${groupKey}/products/${product.key}`} textDecoration="none">
                     <Flex justifyContent="space-between" alignItems="center" maxW="400px"> {/* Adjust max width as needed */}
                       <Text fontSize="md">{product.name}</Text>
                       <Spacer />

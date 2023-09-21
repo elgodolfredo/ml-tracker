@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import { Group } from '@/utils/interfaces';
 import { AuthContext } from '@/contexts/AuthContext';
 import { Box, Heading, Text, Button, Link as ChakraLink, Flex } from '@chakra-ui/react';
+import NextLink from 'next/link'
 
 export default function Home() {
   const router = useRouter();
@@ -33,7 +34,7 @@ export default function Home() {
     <Flex mt={4} flexWrap="wrap">
       {groups.map((group, index) => (
         <Box key={group.name} p={4}>
-          <ChakraLink href={`/groups/${group.key}`} key={index}>
+          <ChakraLink as={NextLink} href={`/groups/${group.key}`} key={index}>
             {group.name}
           </ChakraLink>
         </Box>
