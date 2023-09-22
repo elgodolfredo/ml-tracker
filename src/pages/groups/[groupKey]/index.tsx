@@ -21,6 +21,8 @@ import {
   Spacer,
 } from '@chakra-ui/react';
 import NextLink from 'next/link';
+import { IconButton } from '@chakra-ui/react';
+import { DeleteIcon } from '@chakra-ui/icons'; // Import the delete icon
 import GroupHeading from '@/components/GroupHeading';
 
 function GroupDetails() {
@@ -144,6 +146,29 @@ function GroupDetails() {
     }
   };
 
+  const handleRemoveProduct = async (productKey: string) => {
+    try {
+      // Make an API request to remove the product from the group
+      const response = await fetchWithAuth(`/api/groups/${groupKey}/products/${productKey}`, {
+        method: 'DELETE',
+      });
+  
+      if (response.ok) {
+        // Refresh the group data to reflect the updated list of products
+        const updatedGroupResponse = await fetchWithAuth(`/api/groups/${groupKey}`);
+        const updatedGroupData = await updatedGroupResponse.json();
+        setGroup(updatedGroupData);
+        calculateNewTotals(updatedGroupData);
+      } else {
+        setError('Product removal failed.');
+        console.error('Product removal failed.');
+      }
+    } catch (error) {
+      setError('An error occurred.');
+      console.error('An error occurred:', error);
+    }
+  };
+
   return (
     <Box p={4}>
       {loading ? (
@@ -188,19 +213,27 @@ function GroupDetails() {
               </Box>
               <Heading size="md">Products:</Heading>
               <List mb={3}>
-                {group?.products && group?.products.map((product, index) => (
-                  <ListItem key={index}>
-                    <ChakraLink as={NextLink} href={`/groups/${groupKey}/products/${product.key}`} textDecoration="none">
-                    <Flex justifyContent="space-between" alignItems="center" maxW="400px"> {/* Adjust max width as needed */}
-                      <Text fontSize="md">{product.name}</Text>
-                      <Spacer />
-                      <Text fontSize="md" textAlign="right">
-                        Base Price: {formatCurrency(product.basePrice)}
-                      </Text>
-                    </Flex>
-                    </ChakraLink>
-                  </ListItem>
-                ))}
+              {group?.products && group?.products.map((product, index) => (
+  <ListItem key={index} maxW="600px">
+    <Flex justifyContent="space-between" alignItems="center">
+      <ChakraLink as={NextLink} href={`/groups/${groupKey}/products/${product.key}`} textDecoration="none">
+        <Text fontSize="md">{product.name}</Text>
+      </ChakraLink>
+      <Text fontSize="md" textAlign="right">
+         {formatCurrency(product.basePrice)}
+        {"->"} {formatCurrency(product.avgLastPrice)}
+        <IconButton
+          aria-label={`Remove ${product.name}`}
+          icon={<DeleteIcon />}
+          colorScheme="red"
+          size="sm"
+          ml={2}
+          onClick={() => handleRemoveProduct(product.key)}
+        />
+      </Text>
+    </Flex>
+  </ListItem>
+))}
               </List>
               <Heading size="md">Add a New Product:</Heading>
               <form onSubmit={handleAddProduct}>

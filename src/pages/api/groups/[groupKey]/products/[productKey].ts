@@ -81,8 +81,51 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       console.error('Firebase error:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
+  } else if (req.method === 'DELETE') { // Handle DELETE requests
+    try {
+      const { groupKey, productKey } = req.query;
+
+      // Validate the presence of groupKey and productKey
+      if (!groupKey || !productKey) {
+        res.status(400).json({ error: 'Missing groupKey or productKey parameter' });
+        return;
+      }
+
+      // Verify the Firebase Authentication token from the "Authorization" header
+      const token = req.headers.authorization?.split(' ')[1];
+      const decodedToken = await admin.auth().verifyIdToken(token!);
+
+      if (!decodedToken || !decodedToken.uid) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+
+      const uid = decodedToken.uid;
+      const db = admin.database();
+      const userGroupsRef = db.ref(`/user_groups/${uid}/groups/${groupKey}`);
+
+      // Check if the group exists
+      const snapshot = await userGroupsRef.once('value');
+      if (snapshot.exists()) {
+        // Check if the product exists within the group
+        const productRef = userGroupsRef.child('products').child(productKey as string);
+        const productSnapshot = await productRef.once('value');
+        
+        if (productSnapshot.exists()) {
+          // Remove the product
+          await productRef.remove();
+          res.status(200).json({ message: 'Product removed successfully.' });
+        } else {
+          res.status(404).json({ error: 'Product not found' });
+        }
+      } else {
+        res.status(404).json({ error: 'Group not found' });
+      }
+    } catch (error) {
+      console.error('Firebase error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   } else {
-    // Handle other HTTP methods if needed
-    res.status(405).end(); // Method Not Allowed
+    res.status(405).end();
   }
 };
