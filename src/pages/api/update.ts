@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import admin from '@/utils/firebaseAdmin'; // Import the firebase-admin module you created
+import { getLinkDetails } from '@/utils/ml';
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === 'GET') {
@@ -24,40 +25,34 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
         if (userGroupsSnapshot.exists()) {
           const userGroups = userGroupsSnapshot.val();
-
           // Iterate through all groups and their products for this user
-          for (const groupId of Object.keys(userGroups)) {
+          for (const groupId in userGroups) {
             const group = userGroups[groupId];
+
+            if ( !group.products ){
+              continue;
+            }
 
             for (const productKey of Object.keys(group.products)) {
               const product = group.products[productKey];
 
-            let avgLastPrice = 0;
-            let countPrices = 0;
+              let avgLastPrice = 0;
+              let countPrices = 0;
 
-            for (const linkKey of Object.keys(product.links)) {
-              const link = product.links[linkKey];
-              try {
-                // Extract the item ID from the URL
-                let itemIdMatch = link.href.match(/item_id\:([A-Za-z0-9]+)/);
-                if (!itemIdMatch) {
-                  // extract id from links like this form: https://articulo.mercadolibre.com.ar/MLA-1365437445
-                  itemIdMatch = link.href.match(/MLA\-([A-Za-z0-9]+)/);
-                  itemIdMatch[1] = itemIdMatch[0].replace(/-/g, '');
-                }
+              for (const linkKey of Object.keys(product.links)) {
+                const link = product.links[linkKey];
+                try {
+                  const data = await getLinkDetails(link.href);
+                  if ( !data ){
+                    continue;
+                  }
+                  if (data.length === 0) {
+                    continue;
+                  }
+                  if ( data[0].code === 404 ){
+                    continue;
+                  }
 
-                const itemId = itemIdMatch[1];
-
-                // Make a request to the external API to get item details
-                const url = `https://api.mercadolibre.com/items?ids=${itemId}`;
-                const response = await fetch(url);
-
-                // Check if the request was successful
-                // const data = await response.json();
-                if (response.status === 200) {
-                  // Parse the response body
-                  const data = await response.json();
-                  
                   // Extract the lastPrice from the response
                   const lastPrice = data[0]?.body?.price;
 
@@ -67,12 +62,11 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
                   // Update the link's lastPrice
                   link.lastPrice = lastPrice;
-                }
 
-              } catch (error) {
-                console.error('Error updating link:', error);
+                } catch (error) {
+                  console.error('Error updating link:', error);
+                }
               }
-            }
 
             product.avgLastPrice = avgLastPrice / countPrices;
           }

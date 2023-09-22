@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import admin from '@/utils/firebaseAdmin'; // Import the firebase-admin module you created
+import { getLinkDetails } from '@/utils/ml';
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === 'GET' || req.method === 'POST') {
@@ -45,12 +46,21 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
           if (req.method === 'POST') {
             // Parse the incoming JSON data for the new link
             const { href } = req.body;
+            let lastPrice = 0;
+            try {
+              const data = await getLinkDetails(href);
+              if (data && data.length > 0 && data[0].code !== 404) {
+                lastPrice = data[0]?.body?.price;
+              }
+            } catch (error) {
+              console.error('Error fetching link details:', error);
+            }
 
             // Create a new link object
             const newLink = {
               key: '',
               href,
-              lastPrice: 0,
+              lastPrice,
             };
 
             // Add the new link to the product
