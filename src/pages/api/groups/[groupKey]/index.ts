@@ -45,6 +45,37 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       console.error('Firebase error:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
+  } else if (req.method === 'PUT') {
+    try {
+      const { groupKey } = req.query;
+      const { name } = req.body;
+  
+      // Verify the Firebase Authentication token from the "Authorization" header
+      const token = req.headers.authorization?.split(' ')[1]; // Extract the token part
+      const decodedToken = await admin.auth().verifyIdToken(token!);
+  
+      if (!decodedToken || !decodedToken.uid) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+  
+      const uid = decodedToken.uid;
+  
+      // Access the Realtime Database using admin.database()
+      const db = admin.database();
+  
+      // Reference to the user's "groups" in the Realtime Database
+      const userGroupsRef = db.ref(`/user_groups/${uid}/groups/${groupKey}`);
+  
+      // Update the group name in the Realtime Database
+      await userGroupsRef.update({ name });
+  
+      // Respond with a success message or the updated group data
+      res.status(200).json({ message: 'Group name updated successfully' });
+    } catch (error) {
+      console.error('Firebase error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   } else {
     // Handle other HTTP methods if needed
     res.status(405).end(); // Method Not Allowed

@@ -21,6 +21,7 @@ import {
   Spacer,
 } from '@chakra-ui/react';
 import NextLink from 'next/link';
+import GroupHeading from '@/components/GroupHeading';
 
 function GroupDetails() {
   const router = useRouter();
@@ -32,6 +33,8 @@ function GroupDetails() {
   const [lastPrice, setLastPrice] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editedGroupName, setEditedGroupName] = useState(group?.name || '');
+  const [isEditingGroupName, setIsEditingGroupName] = useState(false);
   const { fetchWithAuth } = useContext(AuthContext);
 
   useEffect(() => {
@@ -42,6 +45,7 @@ function GroupDetails() {
         .then((response) => response.json())
         .then((data: Group) => {
           setGroup(data);
+          setEditedGroupName(data.name);
           // Calculate the total
           calculateNewTotals(data);
           setLoading(false);
@@ -105,6 +109,41 @@ function GroupDetails() {
     }
   }
 
+  const toggleEditGroupName = () => {
+    setIsEditingGroupName(!isEditingGroupName);
+  };
+
+  const handleSaveGroupName = async () => {
+    try {
+      // Make an API request to update the group name
+      const response = await fetchWithAuth(`/api/groups/${groupKey}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: editedGroupName }),
+      });
+  
+      if (response.ok) {
+        // Update the group's name in the UI
+        setGroup((prevGroup) => ({
+          ...prevGroup,
+          name: editedGroupName,
+          key: groupKey as string,
+        }));
+  
+        // Exit editing mode
+        setIsEditingGroupName(false);
+      } else {
+        setError('Group name update failed.');
+        console.error('Group name update failed.');
+      }
+    } catch (error) {
+      setError('An error occurred.');
+      console.error('An error occurred:', error);
+    }
+  };
+
   return (
     <Box p={4}>
       {loading ? (
@@ -118,7 +157,16 @@ function GroupDetails() {
             </Alert>
           ) : (
             <>
-              <Heading size="lg">{group?.name}</Heading>
+              {/* Use the GroupHeading component */}
+              <GroupHeading
+                groupName={group?.name || ''}
+                onEditClick={toggleEditGroupName}
+                onGroupNameChange={setEditedGroupName}
+                onSaveClick={handleSaveGroupName}
+                onCancelClick={() => setIsEditingGroupName(false)}
+                isEditing={isEditingGroupName}
+                editedGroupName={editedGroupName}
+              />
               <Box mb={4}>
                 <Text>
                   <span>Total: {formatCurrency(total)}</span>
