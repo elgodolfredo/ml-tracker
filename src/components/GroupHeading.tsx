@@ -10,6 +10,7 @@ interface GroupHeadingProps {
   onEditClick: () => void;
   onSaveClick: (editedGroupName: string) => void;
   onCancelClick: () => void;
+  onDeleteClick: () => void;
   onGroupNameChange: (editedGroupName: string) => void;
   isEditing: boolean;
   editedGroupName: string;
@@ -20,6 +21,7 @@ const GroupHeading: React.FC<GroupHeadingProps> = ({
   onEditClick,
   onSaveClick,
   onCancelClick,
+  onDeleteClick,
   onGroupNameChange,
   isEditing,
   editedGroupName,
@@ -58,8 +60,17 @@ const GroupHeading: React.FC<GroupHeadingProps> = ({
             ml={2}
             onClick={onEditClick}
           >
-            Edit Group Name
+            Edit group name
           </Button>
+          <Button
+            colorScheme="red"
+            size="sm"
+            ml={2}
+            onClick={onDeleteClick}
+          >
+            Delete group
+          </Button>
+
         </>
       )}
     </Heading>

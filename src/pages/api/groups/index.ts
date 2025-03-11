@@ -2,7 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import admin from '@/utils/firebaseAdmin';
 import { Group, Product } from '@/utils/interfaces';
 
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+const groupRoutes = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === 'GET') {
     const db = admin.database();
 
@@ -53,7 +53,9 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   }
 };
 
-function calculateTotalLastPrice(products: {[key: string]: Product}) {
+export default groupRoutes;
+
+function calculateTotalLastPrice(products: { [key: string]: Product }) {
   if (!products) return 0;
 
   let totalLastPrice = 0;

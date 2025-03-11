@@ -18,7 +18,14 @@ import {
   Badge,
   Flex,
   Text,
-  Spacer,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
 } from '@chakra-ui/react';
 import NextLink from 'next/link';
 import { IconButton } from '@chakra-ui/react';
@@ -38,6 +45,7 @@ function GroupDetails() {
   const [editedGroupName, setEditedGroupName] = useState(group?.name || '');
   const [isEditingGroupName, setIsEditingGroupName] = useState(false);
   const { fetchWithAuth } = useContext(AuthContext);
+  const { isOpen: isOpenDelete, onOpen: onOpenDelete, onClose: onCloseDelete } = useDisclosure()
 
   useEffect(() => {
     // Fetch the group data and products based on groupKey
@@ -125,7 +133,7 @@ function GroupDetails() {
         },
         body: JSON.stringify({ name: editedGroupName }),
       });
-  
+
       if (response.ok) {
         // Update the group's name in the UI
         setGroup((prevGroup) => ({
@@ -133,7 +141,7 @@ function GroupDetails() {
           name: editedGroupName,
           key: groupKey as string,
         }));
-  
+
         // Exit editing mode
         setIsEditingGroupName(false);
       } else {
@@ -152,13 +160,32 @@ function GroupDetails() {
       const response = await fetchWithAuth(`/api/groups/${groupKey}/products/${productKey}`, {
         method: 'DELETE',
       });
-  
+
       if (response.ok) {
         // Refresh the group data to reflect the updated list of products
         const updatedGroupResponse = await fetchWithAuth(`/api/groups/${groupKey}`);
         const updatedGroupData = await updatedGroupResponse.json();
         setGroup(updatedGroupData);
         calculateNewTotals(updatedGroupData);
+      } else {
+        setError('Product removal failed.');
+        console.error('Product removal failed.');
+      }
+    } catch (error) {
+      setError('An error occurred.');
+      console.error('An error occurred:', error);
+    }
+  };
+
+  const handleDeleteGroup = async () => {
+    try {
+      // Make an API request to remove the product from the group
+      const response = await fetchWithAuth(`/api/groups/${groupKey}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        router.push("/");
       } else {
         setError('Product removal failed.');
         console.error('Product removal failed.');
@@ -189,6 +216,7 @@ function GroupDetails() {
                 onGroupNameChange={setEditedGroupName}
                 onSaveClick={handleSaveGroupName}
                 onCancelClick={() => setIsEditingGroupName(false)}
+                onDeleteClick={onOpenDelete}
                 isEditing={isEditingGroupName}
                 editedGroupName={editedGroupName}
               />
@@ -201,9 +229,9 @@ function GroupDetails() {
                 </Text>
                 <Text>
                   <span>
-                    Difference: 
-                    <Badge 
-                      colorScheme={lastPrice >= total ? 'green' : 'red'} 
+                    Difference:
+                    <Badge
+                      colorScheme={lastPrice >= total ? 'green' : 'red'}
                       ml={2}
                     >
                       {lastPrice >= total ? '+' : '-'} {formatCurrency(Math.abs(lastPrice - total))}
@@ -213,27 +241,27 @@ function GroupDetails() {
               </Box>
               <Heading size="md">Products:</Heading>
               <List mb={3}>
-              {group?.products && group?.products.map((product, index) => (
-  <ListItem key={index} maxW="600px">
-    <Flex justifyContent="space-between" alignItems="center">
-      <ChakraLink as={NextLink} href={`/groups/${groupKey}/products/${product.key}`} textDecoration="none">
-        <Text fontSize="md">{product.name}</Text>
-      </ChakraLink>
-      <Text fontSize="md" textAlign="right">
-         {formatCurrency(product.basePrice)}
-        {"->"} {formatCurrency(product.avgLastPrice)}
-        <IconButton
-          aria-label={`Remove ${product.name}`}
-          icon={<DeleteIcon />}
-          colorScheme="red"
-          size="sm"
-          ml={2}
-          onClick={() => handleRemoveProduct(product.key)}
-        />
-      </Text>
-    </Flex>
-  </ListItem>
-))}
+                {group?.products && group?.products.map((product, index) => (
+                  <ListItem key={index} maxW="600px">
+                    <Flex justifyContent="space-between" alignItems="center">
+                      <ChakraLink as={NextLink} href={`/groups/${groupKey}/products/${product.key}`} textDecoration="none">
+                        <Text fontSize="md">{product.name}</Text>
+                      </ChakraLink>
+                      <Text fontSize="md" textAlign="right">
+                        {formatCurrency(product.basePrice)}
+                        {"->"} {formatCurrency(product.avgLastPrice)}
+                        <IconButton
+                          aria-label={`Remove ${product.name}`}
+                          icon={<DeleteIcon />}
+                          colorScheme="red"
+                          size="sm"
+                          ml={2}
+                          onClick={() => handleRemoveProduct(product.key)}
+                        />
+                      </Text>
+                    </Flex>
+                  </ListItem>
+                ))}
               </List>
               <Heading size="md">Add a New Product:</Heading>
               <form onSubmit={handleAddProduct}>
@@ -263,8 +291,38 @@ function GroupDetails() {
           )}
         </>
       )}
+      <DeleteGroupModal isOpen={isOpenDelete} onClose={onCloseDelete} handleDeleteGroup={handleDeleteGroup}></DeleteGroupModal>
     </Box>
   );
+}
+
+interface DeleteGroupModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  handleDeleteGroup: () => void;
+}
+
+function DeleteGroupModal(props: DeleteGroupModalProps) {
+  const { isOpen, onClose, handleDeleteGroup } = props;
+  return (
+    <Modal isOpen={isOpen} onClose={onClose}>
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Delete group</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          Are you sure you want to delete this group? This action cannot be reversed.
+        </ModalBody>
+
+        <ModalFooter>
+          <Button colorScheme='blue' mr={3} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button colorScheme='red' onClick={handleDeleteGroup}>Delete</Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  )
 }
 
 export default GroupDetails;
