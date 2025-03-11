@@ -1,4 +1,4 @@
-export const getLinkDetails = async (link: string): Promise<any|null> => {
+export const getLinkDetails = async (link: string): Promise<any | null> => {
   // Extract the item ID from the URL
   let itemIdMatch = link.match(/item_id\:([A-Za-z0-9]+)/);
   if (!itemIdMatch) {
@@ -7,7 +7,7 @@ export const getLinkDetails = async (link: string): Promise<any|null> => {
     if (!itemIdMatch) {
       // try to extract from links like this form: https://www.mercadolibre.com.ar/mochilas-deportivas-everlast-urbana-mujer-hombrellavero-color-gris-16062/p/MLA26678890
       itemIdMatch = link.match(/\/p\/(MLA[A-Za-z0-9]+)/);
-      if ( !itemIdMatch ) {
+      if (!itemIdMatch) {
         return null;
       }
     } else {
@@ -19,13 +19,19 @@ export const getLinkDetails = async (link: string): Promise<any|null> => {
 
   // Make a request to the external API to get item details
   const url = `https://api.mercadolibre.com/items?ids=${itemId}`;
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ML_ACCESS_TOKEN}`
+    }
+  });
 
   // Check if the request was successful
   // const data = await response.json();
   if (response.status === 200) {
     // Parse the response body
-    return await response.json();
+    const jsonResponse = await response.json();
+    console.log(jsonResponse)
+    return jsonResponse;
   }
   return null;
 }
